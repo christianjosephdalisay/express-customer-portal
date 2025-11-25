@@ -1,13 +1,32 @@
 var createError = require('http-errors');
 var express = require('express');
+// security middlewares
+var helmet = require('helmet');
+var rateLimit = require('express-rate-limit');
+var cors = require('cors');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var cookieParser = require('cookie-parser');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var authRouter = require('./routes/auth');
 
 var app = express();
+
+// Security headers
+app.use(helmet());
+
+// Simple rate limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  message: 'Too many requests, please try again later.'
+});
+
+// CORS - only allow Next frontend during development
+app.use(cors({ origin: ['http://localhost:3000'], credentials: true }));
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -21,6 +40,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/api', authRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
